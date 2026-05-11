@@ -1,0 +1,196 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  // url      = env("DATABASE_URL")
+}
+
+model User {
+  id    String  @id 
+  email String  @unique
+  name  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  apikeys ApiKeys[]
+  agent   Agent[]
+}
+
+//api key per user
+model ApiKeys {
+  id        String    @id @default(cuid())
+  key       String    @unique
+  name      String
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createAt  DateTime  @default(now())
+  updatedAt DateTime  @default(now()) @updatedAt
+  lastTime  DateTime?
+}
+
+//agent 
+model Agent {
+  id          String       @id @default(cuid())
+  name        String
+  description String?
+  prompt      String
+  purpose     AgentPurpose
+  status      AgentStatus  @default(ACTIVE)
+  config      Json
+  userId      String
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  tools AgentTools[]
+  runs  AgentRuns[]
+  flows AgentFlows[]
+}
+
+enum AgentPurpose {
+  BUSINESS
+  RESEARCH
+  CUSTOMER_SUPPORT
+  DATA_ANALYSIS
+  CONTENT_CREATION
+  CODING
+  GENERAL
+}
+
+enum AgentStatus {
+  ACTIVE
+  INACTIVE
+  DRAFT
+}
+
+// tools
+model Tools {
+  id          String       @id @default(cuid())
+  name        String       @unique
+  description String
+  category    ToolCategory
+  inputSchema Json
+  config      Json?
+  isBuiltin   Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+
+  agentTools AgentTools[]
+  executions ToolExecution[]
+}
+
+enum ToolCategory {
+  WEB_SEARCH
+  DATABASE
+  FILE_PROCESSING
+  API_CALLS
+  EMAIL
+  CALENDER
+  NOTIFICATION
+  CUSTOM
+  CODE_EXECUTIONS
+}
+
+//agent tools
+model AgentTools {
+  id        String   @id @default(cuid())
+  agentId   String
+  toolId    String
+  agent     Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  tool      Tools    @relation(fields: [toolId], references: [id], onDelete: Cascade)
+  config    Json?
+  createdAt DateTime @default(now())
+
+  @@unique([agentId, toolId])
+}
+
+//Agent run
+model AgentRuns {
+  id            String          @id @default(cuid())
+  agentId       String
+  agent         Agent           @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  status        RunStatus       @default(PENDING)
+  input         String
+  output        String?
+  error         String?
+  triggerId     String?
+  tokenUsed     Int?
+  startedAt     DateTime?
+  completedAt   DateTime?
+  createdAt     DateTime        @default(now())
+  toolExecution ToolExecution[]
+  logs          AgentLogs[]
+  flow          AgentFlows?
+}
+
+enum RunStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+//exccutions
+model ToolExecution {
+  id          String          @id @default(cuid())
+  runId       String
+  run         AgentRuns       @relation(fields: [runId], references: [id], onDelete: Cascade)
+  toolId      String
+  tool        Tools           @relation(fields: [toolId], references: [id])
+  input       Json
+  output      Json?
+  error       String?
+  status      executionStatus @default(PENDING)
+  durationMs  Int?
+  createdAt   DateTime        @default(now())
+  completedAt DateTime?
+}
+
+enum executionStatus {
+  PENDING
+  RUNNING
+  FAILED
+  SKIIPED
+  COMPLETED
+}
+
+//Agent log
+model AgentLogs {
+  id        String    @id @default(cuid())
+  runId     String
+  run       AgentRuns @relation(fields: [runId], references: [id], onDelete: Cascade)
+  level     LogLevel  @default(INFO)
+  message   String
+  meta      Json?
+  createdAt DateTime  @default(now())
+}
+
+enum LogLevel {
+  INFO
+  DEBUG
+  ERROR
+  WARN
+}
+
+//flows
+model AgentFlows {
+  id        String    @id @default(cuid())
+  agentId   String
+  agent     Agent     @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  runId     String    @unique
+  run       AgentRuns @relation(fields: [runId], references: [id], onDelete: Cascade)
+  node      Json
+  edge      Json
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @default(now()) @updatedAt
+}
