@@ -1,5 +1,5 @@
 import { prisma } from "../prisma/db";
-import type { Prisma } from "../generated/prisma/client";
+import type { Prisma } from "../src/generated/prisma/client";
 import { NotFoundError } from "../ultil/error.utils";
 
 const builtinTools: Prisma.ToolsCreateManyInput[] = [

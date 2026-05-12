@@ -13,6 +13,7 @@
   },
   "scripts": {
     "dev": "bun --watch index.ts",
+    "build": "bunx prisma generate",
     "postinstall": "bunx prisma generate"
   },
   "dependencies": {
