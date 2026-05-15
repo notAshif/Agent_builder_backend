@@ -3,6 +3,7 @@ import { cors } from "hono/cors";
 import { config } from "./config/config";
 import { apiRouter } from "./router/index";
 
+
 export const app = new Hono();
 
 const allowedOrigins = [
@@ -24,7 +25,11 @@ app.route("/api/v1", apiRouter);
 
 app.get("/health", (c) => c.json({ status: "ok" }));
 
-export default {
-    port: config.server.port,
-    fetch: app.fetch,
-};
+if (import.meta.main) {
+    Bun.serve({
+        port: config.server.port,
+        fetch: app.fetch,
+    });
+}
+
+export default app;
