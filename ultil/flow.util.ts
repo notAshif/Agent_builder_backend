@@ -29,7 +29,8 @@ export const buildFlowGraph = (runData: {
         };
         nodes.push(node);
 
-        const source = index === 0 ? "start" : runData.toolExecution[index - 1].id;
+        const previousExecution = runData.toolExecution[index - 1];
+        const source = index === 0 ? "start" : previousExecution?.id ?? "start";
         edges.push({
             id: `e-${source}-${exec.id}`,
             source,
@@ -45,9 +46,8 @@ export const buildFlowGraph = (runData: {
     };
     nodes.push(endNode);
 
-    const lastSource = runData.toolExecution.length > 0
-        ? runData.toolExecution[runData.toolExecution.length - 1].id
-        : "start";
+    const lastExecution = runData.toolExecution.at(-1);
+    const lastSource = lastExecution?.id ?? "start";
     edges.push({ id: `e-${lastSource}-end`, source: lastSource, target: "end" });
 
     return { nodes, edges };
