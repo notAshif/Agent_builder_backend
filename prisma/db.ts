@@ -1,4 +1,4 @@
-import { PrismaClient } from "../src/generated/client";
+import { PrismaClient } from "../src/generated/client.js";
 import { withAccelerate } from '@prisma/extension-accelerate'
 import { PrismaPg } from "@prisma/adapter-pg";
 

@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { config } from "./config/config";
-import { apiRouter } from "./router/index";
+import { config } from "./config/config.js";
+import { apiRouter } from "./router/index.js";
 
 
 export const app = new Hono();

@@ -1,7 +1,7 @@
 import { logger, query, task } from "@trigger.dev/sdk";
-import { prisma } from "../../prisma/db";
+import { prisma } from "../../prisma/db.js";
 import { Sandbox } from "@e2b/code-interpreter"
-import type { Prisma } from "../../src/generated/client";
+import type { Prisma } from "../../src/generated/client.js";
 
 type ToolInput = Record<string, unknown>; 
 

@@ -1,7 +1,7 @@
 import type { Context } from "hono";
 import z from "zod";
-import { sendError, sendSuccess } from "../ultil/response.util";
-import { UserService } from "../service/user.service";
+import { sendError, sendSuccess } from "../ultil/response.util.js";
+import { UserService } from "../service/user.service.js";
 
 const updateProfileSchema = z.object({
     name: z.string().min(1, "Name is required"),

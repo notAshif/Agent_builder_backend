@@ -1,8 +1,8 @@
 import type { Context } from "hono";
 import z from "zod";
-import { sendError, sendSuccess } from "../ultil/response.util";
-import { AuthService } from "../service/auth.service";
-import { config } from "../config/config";
+import { sendError, sendSuccess } from "../ultil/response.util.js";
+import { AuthService } from "../service/auth.service.js";
+import { config } from "../config/config.js";
 
 const loginSchema = z.object({
     email: z.string().email("Invalid email address!"),

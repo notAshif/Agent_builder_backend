@@ -1,8 +1,8 @@
 import { logger, task } from "@trigger.dev/sdk"
-import { prisma } from "../../prisma/db";
+import { prisma } from "../../prisma/db.js";
 import Anthropic from "@anthropic-ai/sdk";
-import { config } from "../../config/config";
-import { executeToolTask } from "./toolExecutor";
+import { config } from "../../config/config.js";
+import { executeToolTask } from "./toolExecutor.js";
 
 const getAnthropicClient = () => {
     const key = config.ai.claudeApiKey;

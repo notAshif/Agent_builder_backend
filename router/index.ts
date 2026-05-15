@@ -1,10 +1,10 @@
 import { Hono } from "hono";
-import { authRouter } from "./auth.route";
-import { agentRouter } from "./agent.route";
-import { userRouter } from "./user.route";
-import { toolRouter } from "./tool.route";
-import { runRouter } from "./run.route";
-import { flowRouter } from "./flow.route";
+import { authRouter } from "./auth.route.js";
+import { agentRouter } from "./agent.route.js";
+import { userRouter } from "./user.route.js";
+import { toolRouter } from "./tool.route.js";
+import { runRouter } from "./run.route.js";
+import { flowRouter } from "./flow.route.js";
 
 export const apiRouter = new Hono();
 

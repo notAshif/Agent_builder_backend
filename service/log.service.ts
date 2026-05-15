@@ -1,6 +1,6 @@
-import { prisma } from "../prisma/db";
+import { prisma } from "../prisma/db.js";
 import type { LogLevel } from "../types";
-import { NotFoundError } from "../ultil/error.utils";
+import { NotFoundError } from "../ultil/error.utils.js";
 
 export const LogService = {
     write: async (runId: string, level: LogLevel, message: string, meta?: Record<string, unknown>) => {

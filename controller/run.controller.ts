@@ -1,6 +1,6 @@
 import type { Context } from "hono";
-import { sendError, sendSuccess } from "../ultil/response.util";
-import { RunService } from "../service/run.service";
+import { sendError, sendSuccess } from "../ultil/response.util.js";
+import { RunService } from "../service/run.service.js";
 
 export const RunController = {
     getStatus: async (c: Context) => {

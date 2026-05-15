@@ -1,5 +1,5 @@
 import { logger, task } from "@trigger.dev/sdk";
-import { prisma } from "../../prisma/db";
+import { prisma } from "../../prisma/db.js";
 
 export const cleanLogTask = task({
     id: "clean-logs",

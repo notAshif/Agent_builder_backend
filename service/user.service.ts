@@ -1,6 +1,6 @@
-import { prisma } from "../prisma/db";
-import { generateApiKey } from "../ultil/crypto.util";
-import { NotFoundError } from "../ultil/error.utils";
+import { prisma } from "../prisma/db.js";
+import { generateApiKey } from "../ultil/crypto.util.js";
+import { NotFoundError } from "../ultil/error.utils.js";
 
 export const UserService = {
     getProfile: async (userId: string) => {

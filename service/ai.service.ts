@@ -1,6 +1,6 @@
 import OpenAI from "openai";
-import { config } from "../config/config";
-import { formatToolsForOpenAI } from "../ultil/ai.util";
+import { config } from "../config/config.js";
+import { formatToolsForOpenAI } from "../ultil/ai.util.js";
 import type { OpenAIMessage } from "../types";
 
 const client = new OpenAI({ apiKey: config.ai?.apiKey });

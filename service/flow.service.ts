@@ -1,6 +1,6 @@
-import { prisma } from "../prisma/db";
-import { buildFlowGraph } from "../ultil/flow.util";
-import { NotFoundError } from "../ultil/error.utils";
+import { prisma } from "../prisma/db.js";
+import { buildFlowGraph } from "../ultil/flow.util.js";
+import { NotFoundError } from "../ultil/error.utils.js";
 
 export const FlowService = {
     getFlow: async (runId: string) => {

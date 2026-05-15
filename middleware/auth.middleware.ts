@@ -1,6 +1,6 @@
 import type { Context, Next } from "hono";
-import { sendError } from "../ultil/response.util";
-import { supabaseAdmin } from "../lib/supabase";
+import { sendError } from "../ultil/response.util.js";
+import { supabaseAdmin } from "../lib/supabase.js";
 
 export const AuthMiddleWare = async (c: Context, next: Next) => {
     const authheader = c.req.header("Authorization")

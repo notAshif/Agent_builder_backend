@@ -1,7 +1,7 @@
 import type { Context } from "hono";
 import { z } from "zod";
-import { sendError, sendSuccess } from "../ultil/response.util";
-import { ToolService } from "../service/tool.service";
+import { sendError, sendSuccess } from "../ultil/response.util.js";
+import { ToolService } from "../service/tool.service.js";
 
 const createToolSchema = z.object({
     name: z.string().min(1, "Tool name is required"),

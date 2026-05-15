@@ -1,6 +1,6 @@
 import { Hono } from "hono";
-import { AuthMiddleWare } from "../middleware/auth.middleware";
-import { RunController } from "../controller/run.controller";
+import { AuthMiddleWare } from "../middleware/auth.middleware.js";
+import { RunController } from "../controller/run.controller.js";
 
 export const runRouter = new Hono();
 

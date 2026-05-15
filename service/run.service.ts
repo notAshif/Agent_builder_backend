@@ -1,7 +1,7 @@
-import { prisma } from "../prisma/db";
+import { prisma } from "../prisma/db.js";
 import OpenAI from "openai";
-import { NotFoundError } from "../ultil/error.utils";
-import { config } from "../config/config";
+import { NotFoundError } from "../ultil/error.utils.js";
+import { config } from "../config/config.js";
 
 const openai = new OpenAI({ apiKey: config.ai.apiKey });
 

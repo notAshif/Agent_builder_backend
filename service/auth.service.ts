@@ -1,6 +1,6 @@
-import { prisma } from "../prisma/db";
-import { supabase } from "../lib/supabase";
-import { ConflictError } from "../ultil/error.utils";
+import { prisma } from "../prisma/db.js";
+import { supabase } from "../lib/supabase.js";
+import { ConflictError } from "../ultil/error.utils.js";
 
 type OAuthProvider = "google" | "github";
 

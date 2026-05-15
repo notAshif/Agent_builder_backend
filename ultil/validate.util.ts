@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { Context } from "hono";
-import { sendError } from "./response.util";
+import { sendError } from "./response.util.js";
 
 export const validate = <T>(
     schema: z.ZodType<T>,
