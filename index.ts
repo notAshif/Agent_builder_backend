@@ -23,6 +23,13 @@ app.use("*", cors({
 
 app.route("/api/v1", apiRouter);
 
+app.get("/", (c) => c.json({
+    name: "AI Agent Builder API",
+    status: "ok",
+    health: "/health",
+    apiBase: "/api/v1",
+}));
+
 app.get("/health", (c) => c.json({ status: "ok" }));
 
 if (import.meta.main) {
