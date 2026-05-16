@@ -1,4 +1,4 @@
-import type { Context } from "hono";
+git import type { Context } from "hono";
 import z from "zod";
 import { sendError, sendSuccess } from "../ultil/response.util.js";
 import { AuthService } from "../service/auth.service.js";
@@ -26,9 +26,22 @@ const resetPassSchema = z.object({
 const oauthProviderSchema = z.enum(["google", "github"]);
 type OAuthProvider = z.infer<typeof oauthProviderSchema>;
 
+const productionFrontendUrl = "https://agent-builder-frontend-two.vercel.app";
+const allowedFrontendOrigins = new Set([
+    config.server.frontendUrl,
+    productionFrontendUrl,
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+].filter(Boolean));
+
+const getRedirectOrigin = (c: Context) => {
+    const origin = c.req.header("Origin");
+    if (origin && allowedFrontendOrigins.has(origin)) return origin;
+    return config.isProd ? productionFrontendUrl : config.server.frontendUrl;
+};
+
 const createOAuthUrlResponse = async (c: Context, provider: OAuthProvider) => {
-    const origin = c.req.header("Origin") ?? config.server.frontendUrl;
-    const redirectTo = `${origin}/auth/callback`;
+    const redirectTo = `${getRedirectOrigin(c)}/auth/callback`;
     const url = await AuthService.getOAuthUrl(provider, redirectTo);
 
     return sendSuccess(c, { url }, "OAuth URL generated", 200);
@@ -124,7 +137,7 @@ export const AuthController = {
                 return sendError(c, "Validation Failed", 422, parsed.error.flatten().fieldErrors);
             }
             const { email } = parsed.data;
-            const redirectTo = `${c.req.header("Origin")}/reset-password`;
+            const redirectTo = `${getRedirectOrigin(c)}/reset-password`;
             await AuthService.forgetPassword(email, redirectTo);
             return sendSuccess(c, null, "If this email exists, a reset link has been sent", 200);
         } catch (error: any) {
