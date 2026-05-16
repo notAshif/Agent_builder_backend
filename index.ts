@@ -8,16 +8,20 @@ export const app = new Hono();
 
 const allowedOrigins = [
     config.server.frontendUrl,
+    "https://agent-builder-frontend-two.vercel.app",
     "http://localhost:5173",
     "http://127.0.0.1:5173",
 ].filter(Boolean) as string[];
 
+const isAllowedOrigin = (origin: string) => {
+    if (allowedOrigins.includes(origin)) return true;
+    return config.isDev && /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin);
+};
+
 app.use("*", cors({
     origin: (origin) => {
-        if (!origin) return config.server.frontendUrl ?? "";
-        if (allowedOrigins.includes(origin)) return origin;
-        if (config.isDev && /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin)) return origin;
-        return config.server.frontendUrl ?? "";
+        if (!origin) return allowedOrigins[0] ?? "";
+        return isAllowedOrigin(origin) ? origin : "";
     },
 }));
 
