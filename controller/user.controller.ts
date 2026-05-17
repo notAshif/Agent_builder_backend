@@ -11,6 +11,10 @@ const createApiKeySchema = z.object({
     name: z.string().min(1, "Name is required"),
 });
 
+const providerKeySchema = z.object({
+    key: z.string().min(1, "API key is required"),
+});
+
 export const UserController = {
     getProfile: async (c: Context) => {
         try {
@@ -73,6 +77,45 @@ export const UserController = {
             return sendSuccess(c, null, "API key deleted", 200);
         } catch (error: any) {
             return sendError(c, error.message ?? "Failed to delete API key", error.statusCode ?? 500);
+        }
+    },
+
+    listProviderKeys: async (c: Context) => {
+        try {
+            const userId = c.get("userId");
+            const providerKeys = await UserService.listProviderKeys(userId);
+            return sendSuccess(c, { providerKeys }, "Provider keys fetched", 200);
+        } catch (error: any) {
+            return sendError(c, error.message ?? "Failed to fetch provider keys", error.statusCode ?? 500);
+        }
+    },
+
+    upsertProviderKey: async (c: Context) => {
+        try {
+            const userId = c.get("userId");
+            const { provider } = c.req.param();
+            if (!provider) return sendError(c, "Provider is required", 422);
+            const body = await c.req.json();
+            const parsed = providerKeySchema.safeParse(body);
+            if (!parsed.success) {
+                return sendError(c, "Validation Failed", 422, parsed.error.flatten().fieldErrors);
+            }
+            const providerKey = await UserService.upsertProviderKey(userId, provider, parsed.data.key);
+            return sendSuccess(c, { providerKey }, "Provider key saved", 200);
+        } catch (error: any) {
+            return sendError(c, error.message ?? "Failed to save provider key", error.statusCode ?? 500);
+        }
+    },
+
+    deleteProviderKey: async (c: Context) => {
+        try {
+            const userId = c.get("userId");
+            const { provider } = c.req.param();
+            if (!provider) return sendError(c, "Provider is required", 422);
+            await UserService.deleteProviderKey(userId, provider);
+            return sendSuccess(c, null, "Provider key deleted", 200);
+        } catch (error: any) {
+            return sendError(c, error.message ?? "Failed to delete provider key", error.statusCode ?? 500);
         }
     },
 };

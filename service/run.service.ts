@@ -2,11 +2,87 @@ import { prisma } from "../prisma/db.js";
 import OpenAI from "openai";
 import { NotFoundError } from "../ultil/error.utils.js";
 import { config } from "../config/config.js";
-import { resolveOpenAIModel } from "../ultil/model.util.js";
+import { isOpenRouterModel, resolveOpenAIModel, resolveOpenRouterModel } from "../ultil/model.util.js";
+import { UserService } from "./user.service.js";
 
-const openai = new OpenAI({ apiKey: config.ai.apiKey });
+const getOpenAIClient = (apiKey?: string) => {
+    const key = apiKey ?? config.ai.apiKey;
+    if (!key) {
+        throw new Error("OPENAI_API_KEY is not configured. Select an OpenRouter model or add an OpenAI key.");
+    }
+    return new OpenAI({ apiKey: key });
+};
 
-const runAgentInline = async (runId: string, agentId: string, input: string) => {
+const runOpenRouterCompletion = async (
+    agent: { prompt: string; config: unknown },
+    input: string,
+    apiKey?: string | null,
+) => {
+    const key = apiKey ?? config.ai.openRouterApiKey;
+    if (!key) {
+        throw new Error("OPENROUTER_API_KEY is not configured.");
+    }
+
+    const agentConfig = agent.config as { model?: string; maxToken?: number; temperature?: number };
+    const { model, replacedFrom } = resolveOpenRouterModel(agentConfig.model, config.ai.openRouterModel);
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+            "Authorization": `Bearer ${key}`,
+            "Content-Type": "application/json",
+            "HTTP-Referer": config.server.frontendUrl,
+            "X-OpenRouter-Title": "AI Agent Builder",
+        },
+        body: JSON.stringify({
+            model,
+            max_tokens: agentConfig.maxToken ?? config.ai.maxToken,
+            temperature: agentConfig.temperature ?? 0.7,
+            messages: [
+                { role: "system", content: agent.prompt },
+                { role: "user", content: input },
+            ],
+        }),
+    });
+
+    const body = await response.json() as any;
+    if (!response.ok) {
+        throw new Error(body?.error?.message ?? `OpenRouter request failed with status ${response.status}`);
+    }
+
+    return {
+        output: body.choices?.[0]?.message?.content ?? "",
+        tokenUsed: body.usage?.total_tokens,
+        model,
+        replacedFrom,
+    };
+};
+
+const runOpenAICompletion = async (
+    agent: { prompt: string; config: unknown },
+    input: string,
+    apiKey?: string | null,
+) => {
+    const agentConfig = agent.config as { model?: string; maxToken?: number; temperature?: number };
+    const { model, replacedFrom } = resolveOpenAIModel(agentConfig.model, config.ai.model);
+    const response = await getOpenAIClient(apiKey ?? undefined).chat.completions.create({
+        model,
+        max_tokens: agentConfig.maxToken ?? config.ai.maxToken,
+        temperature: agentConfig.temperature ?? 0.7,
+        messages: [
+            { role: "system", content: agent.prompt },
+            { role: "user", content: input },
+        ],
+    });
+
+    return {
+        output: response.choices[0]?.message?.content ?? "",
+        tokenUsed: response.usage?.total_tokens,
+        model,
+        replacedFrom,
+    };
+};
+
+const runAgentInline = async (runId: string, agentId: string, input: string, userId: string) => {
     await prisma.agentRuns.update({
         where: { id: runId },
         data: { status: "RUNNING", startedAt: new Date() },
@@ -28,35 +104,29 @@ const runAgentInline = async (runId: string, agentId: string, input: string) => 
 
     try {
         const agentConfig = agent.config as { model?: string; maxToken?: number; temperature?: number };
-        const { model, replacedFrom } = resolveOpenAIModel(agentConfig.model, config.ai.model);
+        const provider = isOpenRouterModel(agentConfig.model) ? "openrouter" : "openai";
+        const userProviderKey = await UserService.getProviderKey(userId, provider);
+        const result = provider === "openrouter"
+            ? await runOpenRouterCompletion(agent, input, userProviderKey)
+            : await runOpenAICompletion(agent, input, userProviderKey);
+        const { model, replacedFrom } = result;
         if (replacedFrom) {
             await prisma.agentLogs.create({
                 data: {
                     runId,
                     level: "WARN",
-                    message: `Model ${replacedFrom} is not supported by the inline OpenAI runner; using ${model}`,
+                    message: `Model ${replacedFrom} was normalized to ${model}`,
                     meta: { requestedModel: replacedFrom, fallbackModel: model },
                 },
             });
         }
 
-        const response = await openai.chat.completions.create({
-            model,
-            max_tokens: agentConfig.maxToken ?? config.ai.maxToken,
-            temperature: agentConfig.temperature ?? 0.7,
-            messages: [
-                { role: "system", content: agent.prompt },
-                { role: "user", content: input },
-            ],
-        });
-
-        const output = response.choices[0]?.message?.content ?? "";
         const completedRun = await prisma.agentRuns.update({
             where: { id: runId },
             data: {
                 status: "COMPLETED",
-                output,
-                tokenUsed: response.usage?.total_tokens,
+                output: result.output,
+                tokenUsed: result.tokenUsed,
                 completedAt: new Date(),
             },
             include: { _count: { select: { logs: true, toolExecution: true } } },
@@ -64,12 +134,12 @@ const runAgentInline = async (runId: string, agentId: string, input: string) => 
 
         await prisma.agentLogs.create({
             data: {
-                runId,
-                level: "INFO",
-                message: "Agent run completed inline",
-                meta: { tokenUsed: response.usage?.total_tokens ?? 0 },
-            },
-        });
+                    runId,
+                    level: "INFO",
+                    message: "Agent run completed inline",
+                    meta: { tokenUsed: result.tokenUsed ?? 0, model },
+                },
+            });
 
         return completedRun;
     } catch (error: any) {
@@ -106,6 +176,20 @@ export const RunService = {
             data: { agentId, status: "PENDING", input },
         });
 
+        const agentConfig = agent.config as { model?: string };
+        if (isOpenRouterModel(agentConfig.model)) {
+            await prisma.agentLogs.create({
+                data: {
+                    runId: run.id,
+                    level: "INFO",
+                    message: "OpenRouter model selected; running inline with OpenRouter",
+                    meta: { model: agentConfig.model },
+                },
+            });
+
+            return runAgentInline(run.id, agentId, input, userId);
+        }
+
         if (config.isDev) {
             await prisma.agentLogs.create({
                 data: {
@@ -115,7 +199,7 @@ export const RunService = {
                 },
             });
 
-            return runAgentInline(run.id, agentId, input);
+            return runAgentInline(run.id, agentId, input, userId);
         }
 
         try {
@@ -137,7 +221,7 @@ export const RunService = {
                 },
             });
 
-            return runAgentInline(run.id, agentId, input);
+            return runAgentInline(run.id, agentId, input, userId);
         }
     },
 

@@ -31,12 +31,15 @@ const configSchema = z.object({
     SUPABASE_ANON_KEY: z.string().min(1, "Anon key is required!"),
     SUPABASE_PUBLISHABLE_KEY: z.string().optional(),
 
-    OPENAI_API_KEY: z.string().startsWith("sk-", "Invalid Api Key!!"),
+    OPENAI_API_KEY: z.string().startsWith("sk-", "Invalid Api Key!!").optional(),
     OPENAI_MODEL: z.string().default("gpt-4o"),
     OPENAI_MAX_TOKENS: z.coerce.number().default(4096),
 
     CLAUDE_API_KEY: z.string().optional(),
     CLAUDE_MODEL: z.string().default("claude-sonnet-4-20250514"),
+
+    OPENROUTER_API_KEY: z.string().min(1).optional(),
+    OPENROUTER_MODEL: z.string().default("meta-llama/llama-3.3-70b-instruct:free"),
 })
 
 const parsed = configSchema.safeParse(process.env)
@@ -96,6 +99,8 @@ export const config = {
         maxToken: env.OPENAI_MAX_TOKENS,
         claudeApiKey: env.CLAUDE_API_KEY,
         claudeModel: env.CLAUDE_MODEL,
+        openRouterApiKey: env.OPENROUTER_API_KEY,
+        openRouterModel: env.OPENROUTER_MODEL,
     }
 
 } as const;

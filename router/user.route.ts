@@ -11,3 +11,6 @@ userRouter.patch("/profile", UserController.updateProfile);
 userRouter.get("/api-keys", UserController.listApiKeys);
 userRouter.post("/api-keys", UserController.createApiKey);
 userRouter.delete("/api-keys/:id", UserController.deleteApiKey);
+userRouter.get("/provider-keys", UserController.listProviderKeys);
+userRouter.put("/provider-keys/:provider", UserController.upsertProviderKey);
+userRouter.delete("/provider-keys/:provider", UserController.deleteProviderKey);
