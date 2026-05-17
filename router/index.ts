@@ -6,6 +6,7 @@ import { toolRouter } from "./tool.route.js";
 import { runRouter } from "./run.route.js";
 import { flowRouter } from "./flow.route.js";
 import { eventsRouter } from "./events.route.js";
+import { scheduleRouter } from "./schedule.route.js";
 
 export const apiRouter = new Hono();
 
@@ -16,3 +17,4 @@ apiRouter.route("/tools", toolRouter);
 apiRouter.route("/runs", runRouter);
 apiRouter.route("/flows", flowRouter);
 apiRouter.route("/events", eventsRouter);
+apiRouter.route("/schedules", scheduleRouter);
