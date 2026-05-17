@@ -4,6 +4,7 @@ import { sendError, sendSuccess } from "../ultil/response.util.js";
 import { AgentService } from "../service/agent.service.js";
 import { RunService } from "../service/run.service.js";
 import { ToolService } from "../service/tool.service.js";
+import { prisma } from "../prisma/db.js";
 import { buildMeta, parsePagination } from "../ultil/pagination.util.js";
 import type { AgentPurpose, AgentStatus } from "../types";
 
@@ -183,15 +184,16 @@ export const AgentController = {
             }
             const query = c.req.query();
             const { page, limit, skip } = parsePagination(query);
+            await AgentService.getById(id, userId);
             const [runs, total] = await Promise.all([
-                (await import("../prisma/db")).prisma.agentRuns.findMany({
+                prisma.agentRuns.findMany({
                     where: { agentId: id },
                     skip,
                     take: limit,
                     orderBy: { createdAt: "desc" },
                     include: { _count: { select: { logs: true, toolExecution: true } } },
                 }),
-                (await import("../prisma/db")).prisma.agentRuns.count({ where: { agentId: id } }),
+                prisma.agentRuns.count({ where: { agentId: id } }),
             ]);
             return sendSuccess(c, { runs, meta: buildMeta(total, page, limit) }, "Runs fetched", 200);
         } catch (error: any) {
