@@ -7,6 +7,21 @@ const supportedProviders = ["openrouter", "openai", "anthropic"] as const;
 export type ProviderKeyProvider = typeof supportedProviders[number];
 
 const providerKeyName = (provider: ProviderKeyProvider) => `${providerKeyPrefix}${provider}`;
+const providerKeyPayloadPrefix = "provider-key:";
+
+const packProviderKey = (userId: string, key: string) => {
+    return `${providerKeyPayloadPrefix}${JSON.stringify({ userId, key })}`;
+};
+
+const unpackProviderKey = (storedKey: string) => {
+    if (!storedKey.startsWith(providerKeyPayloadPrefix)) return storedKey;
+    try {
+        const payload = JSON.parse(storedKey.slice(providerKeyPayloadPrefix.length)) as { key?: string };
+        return payload.key ?? storedKey;
+    } catch {
+        return storedKey;
+    }
+};
 
 const assertProvider = (provider: string): ProviderKeyProvider => {
     if (!supportedProviders.includes(provider as ProviderKeyProvider)) {
@@ -16,11 +31,20 @@ const assertProvider = (provider: string): ProviderKeyProvider => {
 };
 
 const validateProviderKey = async (provider: ProviderKeyProvider, key: string) => {
+    const getErrorMessage = async (response: Response, fallback: string) => {
+        try {
+            const body = await response.json() as any;
+            return body?.error?.message ?? body?.message ?? fallback;
+        } catch {
+            return fallback;
+        }
+    };
+
     if (provider === "openrouter") {
         const response = await fetch("https://openrouter.ai/api/v1/key", {
             headers: { Authorization: `Bearer ${key}` },
         });
-        if (!response.ok) throw new Error("Invalid OpenRouter API key");
+        if (!response.ok) throw new Error(await getErrorMessage(response, "Invalid OpenRouter API key"));
         return;
     }
 
@@ -28,7 +52,7 @@ const validateProviderKey = async (provider: ProviderKeyProvider, key: string) =
         const response = await fetch("https://api.openai.com/v1/models", {
             headers: { Authorization: `Bearer ${key}` },
         });
-        if (!response.ok) throw new Error("Invalid OpenAI API key");
+        if (!response.ok) throw new Error(await getErrorMessage(response, "Invalid OpenAI API key"));
         return;
     }
 
@@ -39,7 +63,7 @@ const validateProviderKey = async (provider: ProviderKeyProvider, key: string) =
                 "anthropic-version": "2023-06-01",
             },
         });
-        if (!response.ok) throw new Error("Invalid Anthropic API key");
+        if (!response.ok) throw new Error(await getErrorMessage(response, "Invalid Anthropic API key"));
     }
 };
 
@@ -109,7 +133,7 @@ export const UserService = {
         });
 
         await prisma.apiKeys.create({
-            data: { userId, name: providerKeyName(provider), key },
+            data: { userId, name: providerKeyName(provider), key: packProviderKey(userId, key) },
         });
 
         return { provider, hasKey: true, updatedAt: new Date(), lastTime: null };
@@ -135,6 +159,6 @@ export const UserService = {
             data: { lastTime: new Date() },
         });
 
-        return apiKey.key;
+        return unpackProviderKey(apiKey.key);
     },
 };

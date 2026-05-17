@@ -46,7 +46,13 @@ const runOpenRouterCompletion = async (
 
     const body = await response.json() as any;
     if (!response.ok) {
-        throw new Error(body?.error?.message ?? `OpenRouter request failed with status ${response.status}`);
+        const details = [
+            body?.error?.message,
+            body?.error?.code && `code=${body.error.code}`,
+            body?.error?.metadata?.provider_name && `provider=${body.error.metadata.provider_name}`,
+            body?.error?.metadata?.raw && `raw=${body.error.metadata.raw}`,
+        ].filter(Boolean).join("; ");
+        throw new Error(`OpenRouter ${model} failed: ${details || `HTTP ${response.status}`}`);
     }
 
     return {
