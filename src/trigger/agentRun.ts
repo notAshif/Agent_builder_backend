@@ -3,6 +3,7 @@ import { prisma } from "../../prisma/db.js";
 import Anthropic from "@anthropic-ai/sdk";
 import { config } from "../../config/config.js";
 import { executeToolTask } from "./toolExecutor.js";
+import { resolveAnthropicModel } from "../../ultil/model.util.js";
 
 const getAnthropicClient = () => {
     const key = config.ai.claudeApiKey;
@@ -76,12 +77,18 @@ export const agentRunTask = task({
             let totalToken = 0;
             let continueLoop = true;
 
-            const model =
-                agentConfig.model ??
-                config.ai.claudeModel ??
-                config.ai.model ??
-                "claude-sonnet-4-20250514";
+            const { model, replacedFrom } = resolveAnthropicModel(agentConfig.model, config.ai.claudeModel);
             const system = agentConfig.systemprompt ?? agent.prompt;
+            if (replacedFrom) {
+                await prisma.agentLogs.create({
+                    data: {
+                        runId,
+                        level: "WARN",
+                        message: `Model ${replacedFrom} is not supported by the Anthropic runner; using ${model}`,
+                        meta: { requestedModel: replacedFrom, fallbackModel: model },
+                    },
+                });
+            }
 
             // agent looping
             while (continueLoop) {

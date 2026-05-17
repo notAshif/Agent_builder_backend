@@ -2,6 +2,7 @@ import { prisma } from "../prisma/db.js";
 import OpenAI from "openai";
 import { NotFoundError } from "../ultil/error.utils.js";
 import { config } from "../config/config.js";
+import { resolveOpenAIModel } from "../ultil/model.util.js";
 
 const openai = new OpenAI({ apiKey: config.ai.apiKey });
 
@@ -27,8 +28,20 @@ const runAgentInline = async (runId: string, agentId: string, input: string) => 
 
     try {
         const agentConfig = agent.config as { model?: string; maxToken?: number; temperature?: number };
+        const { model, replacedFrom } = resolveOpenAIModel(agentConfig.model, config.ai.model);
+        if (replacedFrom) {
+            await prisma.agentLogs.create({
+                data: {
+                    runId,
+                    level: "WARN",
+                    message: `Model ${replacedFrom} is not supported by the inline OpenAI runner; using ${model}`,
+                    meta: { requestedModel: replacedFrom, fallbackModel: model },
+                },
+            });
+        }
+
         const response = await openai.chat.completions.create({
-            model: agentConfig.model ?? config.ai.model,
+            model,
             max_tokens: agentConfig.maxToken ?? config.ai.maxToken,
             temperature: agentConfig.temperature ?? 0.7,
             messages: [
